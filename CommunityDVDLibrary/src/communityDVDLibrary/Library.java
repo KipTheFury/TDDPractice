@@ -5,25 +5,57 @@ import java.util.List;
 
 public class Library {
 
-	private List<Title> titles = new ArrayList<Title>();
-	private List<Title> newTitles = new ArrayList<Title>();
+    private final List<Title> titles = new ArrayList<Title>();
+    private final List<Title> newTitles = new ArrayList<Title>();
 
-	public void donate(Title title, Member member) {
+    private EmailAlert emailAlert = new EmailAlert();
 
-		titles.add(title);
-		newTitles.add(title);
+    private final List<Member> memberList = new ArrayList<Member>();
 
-		member.awardPriorityPoints(10);
-		title.registerNewCopy();
-	}
+    public void addNewMember(String name, String email) {
 
-	public List<Title> listTitles() {
+        Member newMember = new Member(name, email);
 
-		return titles;
-	}
+        if (memberList.contains(newMember)) {
+            throw new RuntimeException(String.format("[%s] is already a member of the Library", name));
+        } else {
+            memberList.add(newMember);
+            emailAlert.sendWelcomeEmail(newMember);
+        }
+    }
 
-	public List<Title> listNewTitles() {
+    public List<Member> getMemberList() {
+        return memberList;
+    }
 
-		return newTitles;
-	}
+    public void donate(Title title, Member member) {
+
+        if (!titles.contains(title)) {
+            newTitles.add(title);
+        }
+
+        titles.add(title);
+
+        member.awardDonationPriorityPoints();
+        title.registerNewCopy();
+    }
+
+    public List<Title> listTitles() {
+
+        return titles;
+    }
+
+    public List<Title> listNewTitles() {
+
+        return newTitles;
+    }
+
+    public void sendWeeklyNewsletter() {
+        emailAlert.sendWeeklyNewsletter(newTitles);
+        newTitles.clear();
+    }
+
+    public void setEmailAlert(EmailAlert emailAlert) {
+        this.emailAlert = emailAlert;
+    }
 }

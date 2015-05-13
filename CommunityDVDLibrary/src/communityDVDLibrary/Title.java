@@ -1,45 +1,98 @@
 package communityDVDLibrary;
 
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+
 public class Title {
 
-	private String name;
-	private String director;
-	private int releaseYear;
-	private int rentalCopies = 0;
-	private EmailAlert emailAlert;
+    private final String name;
+    private final String director;
+    private final int releaseYear;
 
-	public Title(String name, String director, int releaseYear,
-			EmailAlert emailAlert) {
+    private int availableCopies = 0;
 
-		this.name = name;
-		this.director = director;
-		this.releaseYear = releaseYear;
+    private final Queue<Member> reservationQueue = new ArrayBlockingQueue<Member>(10);
+    private final Queue<Member> priorityReservationQueue = new ArrayBlockingQueue<Member>(10);
 
-		this.emailAlert = emailAlert;
-	}
+    private EmailAlert emailAlert = new EmailAlert();
 
-	public void registerNewCopy() {
+    public Title(String name, String director, int releaseYear) {
 
-		rentalCopies += 1;
-		emailAlert.sendEmail();
+        this.name = name;
+        this.director = director;
+        this.releaseYear = releaseYear;
+    }
 
-	}
+    public void registerNewCopy() {
 
-	public String getName() {
-		return name;
-	}
+        availableCopies += 1;
 
-	public String getDirector() {
-		return director;
-	}
+        sendCopyAvailableEmailAlert();
+    }
 
-	public int getReleaseYear() {
-		return releaseYear;
-	}
+    public void borrowCopy() {
 
-	public int getRentalCopies() {
+        if (availableCopies > 0) {
+            availableCopies -= 1;
+        } else {
+            throw new RuntimeException(String.format("There are no copies of [%s] available", name));
+        }
+    }
 
-		return rentalCopies;
-	}
+    public void returnCopy() {
 
+        availableCopies += 1;
+
+        sendCopyAvailableEmailAlert();
+    }
+
+    private void sendCopyAvailableEmailAlert() {
+
+        if (priorityReservationQueue.peek() != null) {
+            emailAlert.sendReservationAlertEmail(priorityReservationQueue.poll());
+        } else if (reservationQueue.peek() != null) {
+            emailAlert.sendReservationAlertEmail(reservationQueue.poll());
+        }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDirector() {
+        return director;
+    }
+
+    public int getReleaseYear() {
+        return releaseYear;
+    }
+
+    public int getAvailableCopies() {
+
+        return availableCopies;
+    }
+
+    public void addToReservationQueue(Member member) {
+
+        reservationQueue.add(member);
+    }
+
+    public Queue<Member> getReservationQueue() {
+
+        return reservationQueue;
+    }
+
+    public void addToPriorityReservationQueue(Member member) {
+
+        priorityReservationQueue.add(member);
+    }
+
+    public Queue<Member> getPriorityReservationQueue() {
+
+        return priorityReservationQueue;
+    }
+
+    public void setEmailAlert(EmailAlert emailAlert) {
+        this.emailAlert = emailAlert;
+    }
 }

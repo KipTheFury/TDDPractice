@@ -1,5 +1,6 @@
 package communityDVDLibrary;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 
@@ -10,37 +11,83 @@ import org.mockito.MockitoAnnotations;
 
 public class LibraryTest {
 
-	@Mock
-	Title mockTitle;
+    Library library;
 
-	@Mock
-	Member mockMember;
+    @Mock
+    Title mockTitle;
 
-	Library library;
+    @Mock
+    Member mockMember;
 
-	@Before
-	public void setUp() throws Exception {
+    @Mock
+    EmailAlert mockEmailAlert;
 
-		MockitoAnnotations.initMocks(this);
-		library = new Library();
-	}
+    private final String testEmail = "JohnSmith@test.com";
+    private final String testName = "John Smith";
 
-	@Test
-	public void canDonateTitles() throws Exception {
+    @Before
+    public void setUp() throws Exception {
 
-		library.donate(mockTitle, mockMember);
-		assertTrue(library.listTitles().contains(mockTitle));
+        library = new Library();
 
-		verify(mockMember).awardPriorityPoints(10);
-		verify(mockTitle).registerNewCopy();
-	}
+        MockitoAnnotations.initMocks(this);
 
-	@Test
-	public void addsNewTitlesToNewTitleList() throws Exception {
+        library.setEmailAlert(mockEmailAlert);
+    }
 
-		library.donate(mockTitle, mockMember);
+    @Test
+    public void canDonateTitles() throws Exception {
 
-		assertTrue(library.listNewTitles().contains(mockTitle));
-	}
+        library.donate(mockTitle, mockMember);
+        assertTrue(library.listTitles().contains(mockTitle));
 
+        verify(mockMember).awardDonationPriorityPoints();
+        verify(mockTitle).registerNewCopy();
+    }
+
+    @Test
+    public void addsNewTitlesToNewTitleList() throws Exception {
+
+        library.donate(mockTitle, mockMember);
+
+        assertTrue(library.listNewTitles().contains(mockTitle));
+    }
+
+    @Test
+    public void canSendWeeklyNewsletter() throws Exception {
+
+        library.sendWeeklyNewsletter();
+
+        verify(mockEmailAlert).sendWeeklyNewsletter(library.listNewTitles());
+    }
+
+    @Test
+    public void existingTitlesNotAddedToNewTitlesList() throws Exception {
+
+        library.donate(mockTitle, mockMember);
+
+        library.sendWeeklyNewsletter();
+
+        library.donate(mockTitle, mockMember);
+
+        assertFalse(library.listNewTitles().contains(mockTitle));
+    }
+
+    @Test
+    public void canAddNewMembersToLibrary() throws Exception {
+
+        Member expectedMember = new Member(testName, testEmail);
+
+        library.addNewMember(testName, testEmail);
+
+        assertTrue(library.getMemberList().contains(expectedMember));
+        verify(mockEmailAlert).sendWelcomeEmail(expectedMember);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void cannotAddExistingMemberToLibrary() throws Exception {
+
+        library.addNewMember(testName, testEmail);
+        library.addNewMember(testName, testEmail);
+    }
 }
